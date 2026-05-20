@@ -12,11 +12,11 @@
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `oe_rate_limit_rules` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `service_name` varchar(32) NOT NULL COMMENT '服务标识: click,data,event,gy,ALL',
-  `api_path_prefix` varchar(128) NOT NULL COMMENT 'API路径前缀，最长前缀匹配',
-  `qps_limit` int NOT NULL DEFAULT 10 COMMENT 'QPS配额（固定窗口秒级计数）',
-  `is_shared` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否共享池: 1共享 0独占',
-  `enabled` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用: 1启用 0禁用',
+  `service_name` varchar(32) NOT NULL COMMENT '服务标识: click,data,event,gy; ALL=全局共享',
+  `api_path_prefix` varchar(128) NOT NULL COMMENT 'API路径前缀，最长前缀匹配（归一化后，数字段替换为{id}）',
+  `qps_limit` int NOT NULL DEFAULT 10 COMMENT 'QPS配额（滑动窗口秒级计数，建议留频控后台配额10%-20%余量）',
+  `is_shared` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否共享池: 1共享(ALL全局) 0独占(单服务)',
+  `enabled` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用: 1启用 0禁用(禁用后不加载到缓存)',
   `created_at` datetime(3) NULL DEFAULT NULL,
   `updated_at` datetime(3) NULL DEFAULT NULL,
   `deleted_at` datetime(3) NULL DEFAULT NULL COMMENT '软删除，gorm.Model',
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `oe_rate_limit_rules` (
   UNIQUE KEY `uk_service_api` (`service_name`, `api_path_prefix`),
   KEY `idx_path` (`api_path_prefix`),
   KEY `idx_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='限流正式规则';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='限流正式规则（滑动窗口QPS + 40110开发者频控封禁）';
 
 -- -----------------------------------------------------------------------------
 -- 2. 自动发现待审核表（SDK 发现未配置接口时写入，status=0 待审核）
@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS `oe_rate_limit_pending` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `service_name` varchar(32) NOT NULL COMMENT '服务标识: click,data,event,gy',
   `api_path_prefix` varchar(128) NOT NULL COMMENT '归一化路径，如 /open_api/v3.0/foo/{id}',
-  `suggested_qps` int NOT NULL DEFAULT 5 COMMENT '建议QPS，审核通过时可改',
-  `status` tinyint NOT NULL DEFAULT 0 COMMENT '0待审核 1已通过 2已拒绝',
-  `remark` varchar(255) NOT NULL DEFAULT '' COMMENT '审核备注',
+  `suggested_qps` int NOT NULL DEFAULT 5 COMMENT '建议QPS（审核通过时可覆盖，建议参考频控后台配额）',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '0待审核 1已通过(写入rules表) 2已拒绝',
+  `remark` varchar(255) NOT NULL DEFAULT '' COMMENT '审核备注（拒绝原因等）',
   `discovered_at` datetime(3) NOT NULL COMMENT '首次自动发现时间',
   `reviewed_at` datetime(3) NULL DEFAULT NULL COMMENT '审核完成时间',
   `created_at` datetime(3) NULL DEFAULT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `oe_rate_limit_pending` (
   UNIQUE KEY `uk_pending_service_api` (`service_name`, `api_path_prefix`),
   KEY `idx_status` (`status`),
   KEY `idx_deleted_at` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='自动发现待审核';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='自动发现待审核（SDK首次访问未配置接口时自动写入）';
 
 -- -----------------------------------------------------------------------------
 -- 3. 示例数据（可按环境删减）
