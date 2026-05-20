@@ -1,0 +1,7 @@
+.idea/
+.cursor/
+*.docx
+~$*.docx
+_docx_extract.txt
+.env
+*.exe
