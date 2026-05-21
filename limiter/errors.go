@@ -2,9 +2,17 @@ package limiter
 
 import "errors"
 
-// RejectReason 标识 SDK 生成的 429 响应来源，业务端通过 Header 获取：
+// StatusRateLimited SDK 生成的 429 响应的 Status 文本。
+// 业务端可通过此常量区分 SDK 限流与平台原始 429（"429 Too Many Requests"）：
 //
-//	resp.Header.Get("X-Limiter-Reject-Reason")
+//	if httpResp.Status == limiter.StatusRateLimited { ... }
+const StatusRateLimited = "429 Rate Limited"
+
+// RejectReason 标识 SDK 生成的 429 响应来源。
+//
+// 获取方式：
+//   - Header: resp.Header.Get(limiter.HeaderRejectReason)
+//   - Body JSON: {"reason":"local","retry_after":0} 或 {"reason":"platform_40110","retry_after":300}
 const (
 	RejectReasonLocal   = "local"          // 本地滑动窗口 QPS 超限
 	RejectReasonPenalty = "platform_40110" // 平台 40110 封禁期拦截
