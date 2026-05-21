@@ -2,8 +2,6 @@ package limiter
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"192.168.10.236/gustone/oe-limiter-sdk/model"
@@ -54,7 +52,7 @@ func (rm *RuleManager) ApprovePending(ctx context.Context, pendingID uint, qps i
 		return err
 	}
 	if pending.Status != model.PendingStatusPending {
-		return fmt.Errorf("pending id=%d status=%d, not pending", pendingID, pending.Status)
+		return ErrPendingNotPending
 	}
 	if qps <= 0 {
 		qps = pending.SuggestedQPS
@@ -89,7 +87,7 @@ func (rm *RuleManager) ApprovePending(ctx context.Context, pendingID uint, qps i
 			return res.Error
 		}
 		if res.RowsAffected == 0 {
-			return errors.New("pending record already reviewed")
+			return ErrPendingAlreadyReviewed
 		}
 		return nil
 	})

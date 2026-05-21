@@ -3,6 +3,7 @@ package limiter_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,9 @@ func TestTransport_RateLimit429(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("want 429, got %d", resp.StatusCode)
+	}
+	if reason := resp.Header.Get(limiter.HeaderRejectReason); reason != limiter.RejectReasonLocal {
+		t.Fatalf("reject reason: want %q, got %q", limiter.RejectReasonLocal, reason)
 	}
 }
 
@@ -243,6 +247,9 @@ func TestTransport_40110PenaltyBlocksSubsequent(t *testing.T) {
 	if resp.StatusCode != 429 {
 		t.Fatalf("req3: want 429 (penalty block), got %d", resp.StatusCode)
 	}
+	if reason := resp.Header.Get(limiter.HeaderRejectReason); reason != limiter.RejectReasonPenalty {
+		t.Fatalf("reject reason: want %q, got %q", limiter.RejectReasonPenalty, reason)
+	}
 	if callCount != 2 {
 		t.Fatalf("upstream should only receive 2 calls, got %d", callCount)
 	}
@@ -262,6 +269,35 @@ func TestTransport_40110PenaltyBlocksSubsequent(t *testing.T) {
 	}
 }
 
+func TestApprovePending_SentinelErrors(t *testing.T) {
+	db := testDB(t)
+	rdb, cleanup := testRedis(t)
+	defer cleanup()
+
+	rm, err := limiter.NewRuleManager(db, rdb, limiter.WithPubSubChannel("ch:"+t.Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rm.Close()
+
+	_ = rm.GetRule("event", "/open_api/v3.0/sentinel/test")
+	list, _ := rm.ListPending(context.Background())
+	if len(list) == 0 {
+		t.Fatal("expected pending record")
+	}
+	pid := list[0].ID
+
+	// 先通过审核（不触发 PubSub 以避免 SQLite 并发竞态）
+	if err := rm.ApprovePending(context.Background(), pid, 100); err != nil {
+		t.Fatal(err)
+	}
+	// 再次审核同一条 → ErrPendingNotPending
+	err = rm.ApprovePending(context.Background(), pid, 100)
+	if !errors.Is(err, limiter.ErrPendingNotPending) {
+		t.Fatalf("want ErrPendingNotPending, got %v", err)
+	}
+}
+
 func TestRuleManager_CloseIdempotent(t *testing.T) {
 	db := testDB(t)
 	rdb, cleanup := testRedis(t)
@@ -278,4 +314,3 @@ func TestRuleManager_CloseIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-

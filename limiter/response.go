@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func rateLimitedResponse(req *http.Request, retryAfter time.Duration, status string) *http.Response {
+func rateLimitedResponse(req *http.Request, retryAfter time.Duration, rejectReason string) *http.Response {
 	h := make(http.Header)
 	if retryAfter > 0 {
 		sec := int(retryAfter.Seconds())
@@ -15,12 +15,12 @@ func rateLimitedResponse(req *http.Request, retryAfter time.Duration, status str
 		}
 		h.Set("Retry-After", strconv.Itoa(sec))
 	}
-	if status == "" {
-		status = "429 Rate Limited"
+	if rejectReason != "" {
+		h.Set(HeaderRejectReason, rejectReason)
 	}
 	return &http.Response{
 		StatusCode: http.StatusTooManyRequests,
-		Status:     status,
+		Status:     "429 Rate Limited",
 		Body:       http.NoBody,
 		Header:     h,
 		Request:    req,

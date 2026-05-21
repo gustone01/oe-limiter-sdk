@@ -13,7 +13,7 @@ import (
 // RateLimitTransport 实现 http.RoundTripper，在 HTTP 出站前插入限流逻辑。
 // 超限时不发起真实请求，直接返回 429 响应。
 type RateLimitTransport struct {
-	serviceName string          // 当前实例所属服务名，如 event、click
+	serviceName string            // 当前实例所属服务名，如 event、click
 	base        http.RoundTripper // 限流通过后的真实 HTTP 传输层
 	manager     *RuleManager      // 规则管理与 Redis 计数
 }
@@ -84,7 +84,7 @@ func (t *RateLimitTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if blocked, retryAfter, err := CheckPenalty(req.Context(), t.manager.rdb, penaltyKey); err != nil {
 			return nil, fmt.Errorf("penalty check: %w", err)
 		} else if blocked {
-			return rateLimitedResponse(req, retryAfter, "429 Platform Rate Limit (40110 penalty)"), nil
+			return rateLimitedResponse(req, retryAfter, RejectReasonPenalty), nil
 		}
 	}
 
@@ -93,7 +93,7 @@ func (t *RateLimitTransport) RoundTrip(req *http.Request) (*http.Response, error
 		return nil, err
 	}
 	if !allowed {
-		return rateLimitedResponse(req, 0, "429 Rate Limited (local)"), nil
+		return rateLimitedResponse(req, 0, RejectReasonLocal), nil
 	}
 
 	resp, err := t.base.RoundTrip(req)
