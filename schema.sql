@@ -43,18 +43,9 @@ CREATE TABLE IF NOT EXISTS `oe_rate_limit_pending` (
   KEY `idx_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='巨量引擎自动发现待审核';
 
--- 3. 巨量引擎示例数据
--- INSERT INTO `oe_rate_limit_rules` (`api_path_prefix`, `qps_limit`, `enabled`, `created_at`, `updated_at`)
--- VALUES
---   ('/open_api/v3.0/event/track/', 200, 1, NOW(3), NOW(3)),
---   ('/open_api/v3.0/report/get/',   50, 1, NOW(3), NOW(3)),
---   ('/open_api/v3.0/tools/click_track/', 30, 1, NOW(3), NOW(3)),
---   ('/open_api/v3.0/advertiser/update/', 10, 1, NOW(3), NOW(3)),
---   ('/open_api/', 500, 1, NOW(3), NOW(3))
--- ON DUPLICATE KEY UPDATE
---   `qps_limit` = VALUES(`qps_limit`),
---   `enabled`   = VALUES(`enabled`),
---   `updated_at` = NOW(3);
+-- 3. 巨量引擎限流规则数据
+-- 完整的 320 条接口规则已独立到 seed_oe_rules.sql，执行方式：
+--   mysql -u user -p your_db < seed_oe_rules.sql
 
 -- =============================================================================
 -- 二、腾讯广告（GDT / Tencent Ads）
