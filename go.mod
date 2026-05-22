@@ -1,6 +1,6 @@
 module 192.168.10.236/gustone/oe-limiter-sdk
 
-go 1.21
+go 1.25
 
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0

@@ -1,6 +1,6 @@
 module 192.168.10.236/gustone/examples/event_client
 
-go 1.21
+go 1.25
 
 require (
 	192.168.10.236/gustone/oe-limiter-sdk v0.0.0
