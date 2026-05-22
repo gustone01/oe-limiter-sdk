@@ -1,10 +1,10 @@
-package core_test
+﻿package core_test
 
 import (
 	"context"
 	"testing"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"

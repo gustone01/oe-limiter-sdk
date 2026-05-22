@@ -1,4 +1,4 @@
-package gdt
+﻿package gdt
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
-	"192.168.10.236/gustone/oe-limiter-sdk/model"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/model"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

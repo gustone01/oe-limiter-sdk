@@ -1,10 +1,10 @@
-package core_test
+﻿package core_test
 
 import (
 	"testing"
 	"time"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
 )
 
 func TestSlidingWindowLimiter_Basic(t *testing.T) {

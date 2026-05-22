@@ -1,12 +1,12 @@
-package main
+﻿package main
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/oe"
-	"192.168.10.236/gustone/oe-limiter-sdk/model"
+	"github.com/gustone01/oe-limiter-sdk/limiter/oe"
+	"github.com/gustone01/oe-limiter-sdk/model"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/glebarez/sqlite"

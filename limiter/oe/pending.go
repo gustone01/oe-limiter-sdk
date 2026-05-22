@@ -1,11 +1,11 @@
-package oe
+﻿package oe
 
 import (
 	"context"
 	"time"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
-	"192.168.10.236/gustone/oe-limiter-sdk/model"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

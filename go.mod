@@ -1,4 +1,4 @@
-module 192.168.10.236/gustone/oe-limiter-sdk
+﻿module github.com/gustone01/oe-limiter-sdk
 
 go 1.25
 

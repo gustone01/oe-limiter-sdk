@@ -1,9 +1,9 @@
-# oe-limiter-sdk
+﻿# oe-limiter-sdk
 
 多平台分布式 API 限流 SDK：支持巨量引擎（QPS+QPM）和腾讯广告（QPM+QPD），MySQL 持久化规则 + Redis Pub/Sub 多实例同步 + 本地缓存，通过包装 `http.RoundTripper` 对出站 HTTP 请求限流。
 
-- **Module**：`192.168.10.236/gustone/oe-limiter-sdk`
-- **仓库**：`http://192.168.10.236:3000/gustone/oe-limiter-sdk.git`
+- **Module**：`github.com/gustone01/oe-limiter-sdk`
+- **仓库**：`https://github.com/gustone01/oe-limiter-sdk`
 
 ## 快速初始化
 
@@ -57,17 +57,7 @@ model/             GORM 数据模型（oe_rate_limit_* + gdt_rate_limit_*）
 ## 安装
 
 ```bash
-go env -w GOPRIVATE=192.168.10.236
-git config --global url."http://192.168.10.236:3000/".insteadOf "https://192.168.10.236/"
-go get 192.168.10.236/gustone/oe-limiter-sdk@latest
-```
-
-私有仓库需配置 HTTP 凭据（示例 `~/.netrc`）：
-
-```text
-machine 192.168.10.236
-login your_username
-password your_token
+go get github.com/gustone01/oe-limiter-sdk@latest
 ```
 
 ## 数据库
@@ -113,7 +103,7 @@ oe.NewTransport(db, rdb, oe.WithSkipAutoMigrate())
 ### 巨量引擎
 
 ```go
-import "192.168.10.236/gustone/oe-limiter-sdk/limiter/oe"
+import "github.com/gustone01/oe-limiter-sdk/limiter/oe"
 
 transport, err := oe.NewTransport(db, rdb,
     oe.WithOnDiscover(func(path string) {
@@ -132,7 +122,7 @@ resp, _ := client.Get("https://api.example.com/open_api/v3.0/event/track/123")
 ### 腾讯广告
 
 ```go
-import "192.168.10.236/gustone/oe-limiter-sdk/limiter/gdt"
+import "github.com/gustone01/oe-limiter-sdk/limiter/gdt"
 
 transport, err := gdt.NewTransport(db, rdb,
     gdt.WithFallbackQPM(100),
@@ -190,7 +180,7 @@ _ = rm.PublishRuleUpdate(ctx)
 ### 单机滑动窗口（不依赖 Redis）
 
 ```go
-import "192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
+import "github.com/gustone01/oe-limiter-sdk/limiter/core"
 
 lim := core.NewSlidingWindowLimiter(time.Second, 100) // 1 秒窗口，100 QPS
 if lim.Allow() {
@@ -203,7 +193,7 @@ if lim.Allow() {
 SDK 在本地限流超限时返回 `429`（`Status: "429 Rate Limited"`），此时请求未发起。
 
 ```go
-import "192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
+import "github.com/gustone01/oe-limiter-sdk/limiter/core"
 
 if resp.Status == core.StatusRateLimited {
     // SDK 限流拦截，退避后重试

@@ -1,11 +1,11 @@
-package gdt
+﻿package gdt
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

@@ -1,4 +1,4 @@
-package gdt_test
+﻿package gdt_test
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/gdt"
-	"192.168.10.236/gustone/oe-limiter-sdk/model"
+	"github.com/gustone01/oe-limiter-sdk/limiter/core"
+	"github.com/gustone01/oe-limiter-sdk/limiter/gdt"
+	"github.com/gustone01/oe-limiter-sdk/model"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/glebarez/sqlite"

@@ -1,4 +1,4 @@
-// 巨量引擎服务接入 oe-limiter-sdk 示例。
+﻿// 巨量引擎服务接入 oe-limiter-sdk 示例。
 //
 // 环境变量：MYSQL_DSN、REDIS_ADDR、API_URL（可选）
 package main
@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter/oe"
+	"github.com/gustone01/oe-limiter-sdk/limiter/oe"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
