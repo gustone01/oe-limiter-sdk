@@ -1,11 +1,11 @@
 module github.com/gustone01/oe-limiter-sdk/examples/event_client
 
-go 1.25
+go 1.25.3
 
 require (
-	github.com/gustone01/oe-limiter-sdk v0.0.0
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/glebarez/sqlite v1.11.0
+	github.com/gustone01/oe-limiter-sdk v0.0.0
 	github.com/redis/go-redis/v9 v9.7.3
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
