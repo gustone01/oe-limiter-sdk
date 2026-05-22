@@ -20,7 +20,3 @@ client := &http.Client{Transport: transport}
 transport, _ := gdt.NewTransport(db, rdb)
 client := &http.Client{Transport: transport}
 ```
-
-## 文档
-
-详细使用指南见 [docs/GUIDE.md](docs/GUIDE.md)。
