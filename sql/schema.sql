@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS `oe_rate_limit_pending` (
 -- =============================================================================
 -- 二、腾讯广告（GDT / Tencent Ads）
 -- =============================================================================
+-- 腾讯广告限流规则数据（858 条接口规则）已独立到 seed_gdt_rules.sql，执行方式：
+--   mysql -u user -p your_db < seed_gdt_rules.sql
 
 -- 4. 正式限流规则表
 CREATE TABLE IF NOT EXISTS `gdt_rate_limit_rules` (

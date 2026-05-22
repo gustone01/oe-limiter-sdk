@@ -74,13 +74,21 @@ password your_token
 
 业务服务**无需手动建表**，首次调用 `NewTransport` 时 SDK 自动创建。
 
-生产环境若由 DBA 统一执行 [schema.sql](./schema.sql)，可关闭自动建表：
+生产环境若由 DBA 统一执行 DDL + 种子数据：
+
+```bash
+mysql -u user -p your_db < schema.sql
+mysql -u user -p your_db < seed_oe_rules.sql
+mysql -u user -p your_db < seed_gdt_rules.sql
+```
+
+关闭自动建表：
 
 ```go
 oe.NewTransport(db, rdb, oe.WithSkipAutoMigrate())
 ```
 
-### 巨量引擎表
+### 巨量引擎表（320 条规则）
 
 | api_path_prefix | qps_limit |
 |-----------------|-----------|
@@ -88,12 +96,17 @@ oe.NewTransport(db, rdb, oe.WithSkipAutoMigrate())
 | /open_api/v3.0/report/get/ | 50 |
 | /open_api/ | 500 |
 
-### 腾讯广告表
+完整规则见 [seed_oe_rules.sql](seed_oe_rules.sql)。
+
+### 腾讯广告表（858 条规则）
 
 | api_path_prefix | qpm_limit | qpd_limit |
 |-----------------|-----------|-----------|
-| /videos/get | 1000 | 100000 |
-| /reports/get | 500 | 0 |
+| /adgroups/get | 2000 | 0 |
+| /custom_audience_files/add | 50 | 7000 |
+| /wechat_channels_authorization/get | 1000 | 1440000 |
+
+完整规则见 [seed_gdt_rules.sql](seed_gdt_rules.sql)。
 
 ## 使用
 
