@@ -1,4 +1,4 @@
-﻿package gdt
+package gdt
 
 import (
 	"github.com/gustone01/oe-limiter-sdk/model"

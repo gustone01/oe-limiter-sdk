@@ -1,4 +1,4 @@
-﻿// 巨量引擎服务接入 oe-limiter-sdk 示例。
+// 巨量引擎服务接入 oe-limiter-sdk 示例。
 //
 // 环境变量：MYSQL_DSN、REDIS_ADDR、API_URL（可选）
 package main

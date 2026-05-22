@@ -1,4 +1,4 @@
-﻿package gdt_test
+package gdt_test
 
 import (
 	"context"

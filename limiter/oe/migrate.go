@@ -1,4 +1,4 @@
-﻿package oe
+package oe
 
 import (
 	"github.com/gustone01/oe-limiter-sdk/model"

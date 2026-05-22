@@ -1,4 +1,4 @@
-﻿package gdt
+package gdt
 
 import (
 	"context"

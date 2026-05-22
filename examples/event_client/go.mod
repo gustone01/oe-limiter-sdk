@@ -1,4 +1,4 @@
-﻿module github.com/gustone01/oe-limiter-sdk/examples/event_client
+module github.com/gustone01/oe-limiter-sdk/examples/event_client
 
 go 1.25
 

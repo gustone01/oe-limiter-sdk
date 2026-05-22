@@ -1,6 +1,6 @@
-﻿module github.com/gustone01/oe-limiter-sdk
+module github.com/gustone01/oe-limiter-sdk
 
-go 1.25
+go 1.25.3
 
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0
