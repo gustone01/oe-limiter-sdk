@@ -110,6 +110,7 @@ func (rm *RuleManager) reload(ctx context.Context) error {
 	rm.rulesMu.Lock()
 	rm.rules = rules
 	rm.rulesMu.Unlock()
+	log.Printf("[gdt-limiter] loaded %d rules", len(rules))
 	return nil
 }
 
