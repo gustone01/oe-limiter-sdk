@@ -1,4 +1,4 @@
-// event 服务接入 oe-limiter-sdk 示例。
+// 巨量引擎服务接入 oe-limiter-sdk 示例。
 //
 // 环境变量：MYSQL_DSN、REDIS_ADDR、API_URL（可选）
 package main
@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter"
+	"192.168.10.236/gustone/oe-limiter-sdk/limiter/oe"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
@@ -32,16 +32,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// 建表由 SDK 在 NewTransport 内自动完成，无需业务侧调用 AutoMigrate
 
 	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
 		log.Fatal(err)
 	}
 
-	transport, err := limiter.NewTransport("event", db, rdb,
-		limiter.WithOnDiscover(func(svc, path string) {
-			log.Printf("[AUTO-DISCOVER] svc=%s path=%s → 已写入 oe_rate_limit_pending", svc, path)
+	transport, err := oe.NewTransport(db, rdb,
+		oe.WithOnDiscover(func(path string) {
+			log.Printf("[AUTO-DISCOVER] path=%s → 已写入 oe_rate_limit_pending", path)
 		}),
 	)
 	if err != nil {

@@ -1,41 +1,39 @@
-package limiter
+package oe
 
 import (
 	"context"
 	"time"
 
+	"192.168.10.236/gustone/oe-limiter-sdk/limiter/core"
 	"192.168.10.236/gustone/oe-limiter-sdk/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-// savePending 将自动发现的接口写入待审核表（同一 service+path 仅保留一条，重复发现忽略）。
-func (rm *RuleManager) savePending(ctx context.Context, serviceName, apiPath string) error {
+func (rm *RuleManager) savePending(ctx context.Context, apiPath string) error {
 	if rm.opts.DisablePendingSave {
 		return nil
 	}
-	qps := rm.opts.PendingSuggestedQPS
+	qps := rm.opts.FallbackQPS
 	if qps <= 0 {
-		qps = DefaultRule().QPSLimit
+		qps = defaultFallbackQPS
 	}
-	row := model.RateLimitPending{
-		ServiceName:   serviceName,
+	row := model.OeRateLimitPending{
 		APIPathPrefix: apiPath,
 		SuggestedQPS:  qps,
 		Status:        model.PendingStatusPending,
 		DiscoveredAt:  time.Now(),
 	}
-	// 已存在相同 service+path 时不重复插入（含待审核/已通过/已拒绝）
 	return rm.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "service_name"}, {Name: "api_path_prefix"}},
+		Columns:   []clause.Column{{Name: "api_path_prefix"}},
 		DoNothing: true,
 	}).Create(&row).Error
 }
 
-// ListPending 查询所有待审核记录，供管理后台展示。
-func (rm *RuleManager) ListPending(ctx context.Context) ([]model.RateLimitPending, error) {
-	var rows []model.RateLimitPending
+// ListPending 查询所有待审核记录。
+func (rm *RuleManager) ListPending(ctx context.Context) ([]model.OeRateLimitPending, error) {
+	var rows []model.OeRateLimitPending
 	err := rm.db.WithContext(ctx).
 		Where("status = ?", model.PendingStatusPending).
 		Order("discovered_at DESC").
@@ -43,31 +41,27 @@ func (rm *RuleManager) ListPending(ctx context.Context) ([]model.RateLimitPendin
 	return rows, err
 }
 
-// ApprovePending 审核通过：写入正式规则表 oe_rate_limit_rules，并标记待审核记录为已通过。
-//
-// qps 若 <=0 则使用待审核记录中的 suggested_qps；成功后需由调用方或本方法触发 PublishRuleUpdate。
+// ApprovePending 审核通过：写入正式规则表并标记已通过。
 func (rm *RuleManager) ApprovePending(ctx context.Context, pendingID uint, qps int) error {
-	var pending model.RateLimitPending
+	var pending model.OeRateLimitPending
 	if err := rm.db.WithContext(ctx).First(&pending, pendingID).Error; err != nil {
 		return err
 	}
 	if pending.Status != model.PendingStatusPending {
-		return ErrPendingNotPending
+		return core.ErrPendingNotPending
 	}
 	if qps <= 0 {
 		qps = pending.SuggestedQPS
 	}
 
 	return rm.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		rule := model.RateLimitRule{
-			ServiceName:   pending.ServiceName,
+		rule := model.OeRateLimitRule{
 			APIPathPrefix: pending.APIPathPrefix,
 			QPSLimit:      qps,
-			IsShared:      0,
 			Enabled:       1,
 		}
 		if err := tx.Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "service_name"}, {Name: "api_path_prefix"}},
+			Columns: []clause.Column{{Name: "api_path_prefix"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"qps_limit", "enabled", "updated_at",
 			}),
@@ -76,7 +70,7 @@ func (rm *RuleManager) ApprovePending(ctx context.Context, pendingID uint, qps i
 		}
 
 		now := time.Now()
-		res := tx.Model(&model.RateLimitPending{}).
+		res := tx.Model(&model.OeRateLimitPending{}).
 			Where("id = ? AND status = ?", pendingID, model.PendingStatusPending).
 			Updates(map[string]interface{}{
 				"status":      model.PendingStatusApproved,
@@ -87,16 +81,16 @@ func (rm *RuleManager) ApprovePending(ctx context.Context, pendingID uint, qps i
 			return res.Error
 		}
 		if res.RowsAffected == 0 {
-			return ErrPendingAlreadyReviewed
+			return core.ErrPendingAlreadyReviewed
 		}
 		return nil
 	})
 }
 
-// RejectPending 审核拒绝，仅更新待审核表状态，不写入正式规则。
+// RejectPending 审核拒绝。
 func (rm *RuleManager) RejectPending(ctx context.Context, pendingID uint, remark string) error {
 	now := time.Now()
-	res := rm.db.WithContext(ctx).Model(&model.RateLimitPending{}).
+	res := rm.db.WithContext(ctx).Model(&model.OeRateLimitPending{}).
 		Where("id = ? AND status = ?", pendingID, model.PendingStatusPending).
 		Updates(map[string]interface{}{
 			"status":      model.PendingStatusRejected,
@@ -112,7 +106,7 @@ func (rm *RuleManager) RejectPending(ctx context.Context, pendingID uint, remark
 	return nil
 }
 
-// ApprovePendingAndReload 审核通过并刷新本实例规则缓存，同时广播给其他实例。
+// ApprovePendingAndReload 审核通过并刷新缓存 + 广播。
 func (rm *RuleManager) ApprovePendingAndReload(ctx context.Context, pendingID uint, qps int) error {
 	if err := rm.ApprovePending(ctx, pendingID, qps); err != nil {
 		return err

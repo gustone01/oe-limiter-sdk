@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"192.168.10.236/gustone/oe-limiter-sdk/limiter"
+	"192.168.10.236/gustone/oe-limiter-sdk/limiter/oe"
 	"192.168.10.236/gustone/oe-limiter-sdk/model"
 
 	"github.com/alicebob/miniredis/v2"
@@ -16,14 +16,14 @@ import (
 
 func TestEventClient(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open("file:event_test?mode=memory&cache=private"), &gorm.Config{})
-	_ = limiter.AutoMigrate(db)
-	_ = db.Create(&model.RateLimitRule{ServiceName: "event", APIPathPrefix: "/open_api/", QPSLimit: 100, Enabled: 1})
+	_ = oe.AutoMigrate(db)
+	_ = db.Create(&model.OeRateLimitRule{APIPathPrefix: "/open_api/", QPSLimit: 100, Enabled: 1})
 
 	mr, _ := miniredis.Run()
 	defer mr.Close()
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 
-	tp, err := limiter.NewTransport("event", db, rdb)
+	tp, err := oe.NewTransport(db, rdb, oe.WithSkipAutoMigrate())
 	if err != nil {
 		t.Fatal(err)
 	}
