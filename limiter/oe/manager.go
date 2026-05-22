@@ -91,6 +91,7 @@ func (rm *RuleManager) GetRule(apiPath string) Rule {
 	return DefaultRule(rm.opts.FallbackQPS)
 }
 
+// reload 从数据库加载已启用的规则并刷新本地缓存。
 func (rm *RuleManager) reload(ctx context.Context) error {
 	var rows []model.OeRateLimitRule
 	if err := rm.db.WithContext(ctx).Where("enabled = ?", 1).Find(&rows).Error; err != nil {
@@ -112,6 +113,7 @@ func (rm *RuleManager) reload(ctx context.Context) error {
 	return nil
 }
 
+// matchRule 在有序规则列表中执行最长前缀匹配。
 func (rm *RuleManager) matchRule(apiPath string) (Rule, bool) {
 	rm.rulesMu.RLock()
 	defer rm.rulesMu.RUnlock()
@@ -136,6 +138,7 @@ func (rm *RuleManager) matchRule(apiPath string) (Rule, bool) {
 	return best, true
 }
 
+// startSubscriber 启动 Redis Pub/Sub 订阅，收到消息后自动 reload 规则。
 func (rm *RuleManager) startSubscriber() {
 	rm.pubsub = rm.rdb.Subscribe(context.Background(), rm.opts.PubSubChannel)
 	go func() {
@@ -159,6 +162,7 @@ func (rm *RuleManager) startSubscriber() {
 	}()
 }
 
+// handleAutoDiscover 处理未匹配规则的接口：去重后写入待审核表并触发回调。
 func (rm *RuleManager) handleAutoDiscover(apiPath string) {
 	if _, loaded := rm.discoveredApis.LoadOrStore(apiPath, struct{}{}); loaded {
 		return
@@ -173,6 +177,7 @@ func (rm *RuleManager) handleAutoDiscover(apiPath string) {
 	}
 }
 
+// createTempRuleInRedis 在 Redis 中标记已发现的接口，24h 过期，用于跨实例去重。
 func (rm *RuleManager) createTempRuleInRedis(ctx context.Context, apiPath string) {
 	_ = rm.rdb.Set(ctx, "oe:limit:discovered:"+apiPath, time.Now().Unix(), 24*time.Hour).Err()
 }

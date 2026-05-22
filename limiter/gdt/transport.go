@@ -34,10 +34,12 @@ func NewTransport(db *gorm.DB, rdb *redis.Client, opts ...Option) (*Transport, e
 	}, nil
 }
 
+// Manager 返回内部的规则管理器，可用于审核待审核接口。
 func (t *Transport) Manager() *RuleManager {
 	return t.manager
 }
 
+// Close 停止内部 RuleManager 的 Pub/Sub 订阅，释放资源。
 func (t *Transport) Close() error {
 	return t.manager.Close()
 }

@@ -11,20 +11,21 @@ const (
 
 // Options 巨量引擎限流 SDK 的可选参数。
 type Options struct {
-	// PubSubChannel 规则变更广播 Redis 频道名。
+	// PubSubChannel 规则变更广播 Redis 频道名，默认 "oe:limit:rules:updated"。
 	PubSubChannel string
-	// FallbackQPS 未匹配到规则时的兜底 QPS（同时用于待审核记录的建议值）。
+	// FallbackQPS 未匹配到规则时的兜底 QPS（同时用于待审核记录的建议值），默认 5。
 	FallbackQPS int
-	// OnDiscover 首次访问未配置接口时触发的回调。
+	// OnDiscover 首次访问未配置接口时触发的回调（异步执行）。
 	OnDiscover func(apiPath string)
 	// DisablePendingSave 为 true 时不写入待审核表。
 	DisablePendingSave bool
-	// SkipAutoMigrate 为 true 时跳过自动建表。
+	// SkipAutoMigrate 为 true 时跳过自动建表（适用于 DBA 统一管理 DDL 的场景）。
 	SkipAutoMigrate bool
-	// Base 限流通过后实际发起 HTTP 请求的底层 RoundTripper。
+	// Base 限流通过后实际发起 HTTP 请求的底层 RoundTripper，默认 http.DefaultTransport。
 	Base http.RoundTripper
 }
 
+// applyDefaults 填充未设置的选项为默认值。
 func (o *Options) applyDefaults() {
 	if o.PubSubChannel == "" {
 		o.PubSubChannel = defaultPubSubChannel

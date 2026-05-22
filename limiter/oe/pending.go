@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// savePending 将自动发现的接口写入待审核表（冲突则忽略）。
 func (rm *RuleManager) savePending(ctx context.Context, apiPath string) error {
 	if rm.opts.DisablePendingSave {
 		return nil

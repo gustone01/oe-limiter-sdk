@@ -59,6 +59,7 @@ func NewRuleManager(db *gorm.DB, rdb *redis.Client, opts ...Option) (*RuleManage
 	return rm, nil
 }
 
+// Close 停止 Pub/Sub 订阅并释放资源，可安全重复调用。
 func (rm *RuleManager) Close() error {
 	var err error
 	rm.closeOnce.Do(func() {
@@ -70,10 +71,12 @@ func (rm *RuleManager) Close() error {
 	return err
 }
 
+// Reload 主动从 MySQL 重新加载规则到本地缓存。
 func (rm *RuleManager) Reload(ctx context.Context) error {
 	return rm.reload(ctx)
 }
 
+// PublishRuleUpdate 通过 Redis Pub/Sub 通知所有实例刷新规则缓存。
 func (rm *RuleManager) PublishRuleUpdate(ctx context.Context) error {
 	return rm.rdb.Publish(ctx, rm.opts.PubSubChannel, "reload").Err()
 }
@@ -87,6 +90,7 @@ func (rm *RuleManager) GetRule(apiPath string) Rule {
 	return DefaultRule(rm.opts.FallbackQPM, rm.opts.FallbackQPD)
 }
 
+// reload 从数据库加载已启用的规则并刷新本地缓存。
 func (rm *RuleManager) reload(ctx context.Context) error {
 	var rows []model.GdtRateLimitRule
 	if err := rm.db.WithContext(ctx).Where("enabled = ?", 1).Find(&rows).Error; err != nil {
@@ -109,6 +113,7 @@ func (rm *RuleManager) reload(ctx context.Context) error {
 	return nil
 }
 
+// matchRule 在有序规则列表中执行最长前缀匹配。
 func (rm *RuleManager) matchRule(apiPath string) (Rule, bool) {
 	rm.rulesMu.RLock()
 	defer rm.rulesMu.RUnlock()
@@ -133,6 +138,7 @@ func (rm *RuleManager) matchRule(apiPath string) (Rule, bool) {
 	return best, true
 }
 
+// startSubscriber 启动 Redis Pub/Sub 订阅，收到消息后自动 reload 规则。
 func (rm *RuleManager) startSubscriber() {
 	rm.pubsub = rm.rdb.Subscribe(context.Background(), rm.opts.PubSubChannel)
 	go func() {
@@ -156,6 +162,7 @@ func (rm *RuleManager) startSubscriber() {
 	}()
 }
 
+// handleAutoDiscover 处理未匹配规则的接口：去重后写入待审核表并触发回调。
 func (rm *RuleManager) handleAutoDiscover(apiPath string) {
 	if _, loaded := rm.discoveredApis.LoadOrStore(apiPath, struct{}{}); loaded {
 		return
@@ -170,6 +177,7 @@ func (rm *RuleManager) handleAutoDiscover(apiPath string) {
 	}
 }
 
+// createTempRuleInRedis 在 Redis 中标记已发现的接口，24h 过期，用于跨实例去重。
 func (rm *RuleManager) createTempRuleInRedis(ctx context.Context, apiPath string) {
 	_ = rm.rdb.Set(ctx, "gdt:limit:discovered:"+apiPath, time.Now().Unix(), 24*time.Hour).Err()
 }
