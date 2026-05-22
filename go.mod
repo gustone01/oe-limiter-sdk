@@ -2,11 +2,6 @@ module github.com/gustone01/oe-limiter-sdk
 
 go 1.25.3
 
-retract (
-	v1.0.1 // 模块路径迁移导致 proxy 缓存不一致
-	v1.0.0 // 模块路径迁移前的版本，proxy 缓存了旧路径 192.168.10.236/gustone/oe-limiter-sdk
-)
-
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/glebarez/sqlite v1.11.0
