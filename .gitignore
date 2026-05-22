@@ -1,7 +1,18 @@
+# IDE
 .idea/
 .cursor/
+.vscode/
+
+# 临时文件
 *.docx
 ~$*.docx
 _docx_extract.txt
+*.py
+
+# 环境 & 密钥
 .env
+.env.*
+
+# 编译产物
 *.exe
+vendor/
