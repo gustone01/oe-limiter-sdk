@@ -16,3 +16,9 @@ type Rule struct {
 func DefaultRule(fallbackQPM, fallbackQPD int) Rule {
 	return Rule{QPMLimit: fallbackQPM, QPDLimit: fallbackQPD, Enabled: true}
 }
+
+// UnlimitedRule 返回不限流规则。
+// QPMLimit=0 + QPDLimit=0 + Enabled=true 利用 transport 层 "if limit > 0" 条件跳过限流。
+func UnlimitedRule() Rule {
+	return Rule{QPMLimit: 0, QPDLimit: 0, Enabled: true}
+}

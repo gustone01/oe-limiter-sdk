@@ -14,3 +14,9 @@ type Rule struct {
 func DefaultRule(fallbackQPS int) Rule {
 	return Rule{QPSLimit: fallbackQPS, Enabled: true}
 }
+
+// UnlimitedRule 返回不限流规则。
+// QPSLimit=0 + Enabled=true 利用 transport 层 "if rule.QPSLimit <= 0 { return true }" 约定跳过限流。
+func UnlimitedRule() Rule {
+	return Rule{QPSLimit: 0, Enabled: true}
+}

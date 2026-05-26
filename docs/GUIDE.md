@@ -22,6 +22,7 @@ model/             GORM 数据模型（oe_rate_limit_* + gdt_rate_limit_*）
 - API 路径归一化（巨量：保留版本号去长数字段；腾讯：去版本前缀）
 - 最长前缀匹配规则
 - 未配置接口自动发现 → 写入待审核表 + 可选回调告警
+- **未匹配仅记录模式**：`WithUnmatchedUnlimited()` 自动发现仍生效，但不应用兜底限流（适用于采集期/内网环境）
 - **单机滑动窗口工具类**：`core.SlidingWindowLimiter` 可用于不依赖 Redis 的单进程场景
 
 ### 两平台对比
@@ -83,6 +84,8 @@ transport, err := oe.NewTransport(db, rdb,
     oe.WithOnDiscover(func(path string) {
         log.Printf("发现未配置接口: %s", path)
     }),
+    // 采集期：发现新接口并写入待审核表，但不兜底限流
+    // oe.WithUnmatchedUnlimited(),
 )
 if err != nil {
     panic(err)
@@ -117,18 +120,24 @@ resp, _ := client.Get("https://api.e.qq.com/v3.0/videos/get?...")
 
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
-| `WithFallbackQPS` | `5` | 未匹配规则时的兜底 QPS |
+| `WithFallbackQPS` | `10` | 未匹配规则时的兜底 QPS（同时作为 pending 建议值） |
+| `WithUnmatchedUnlimited` | `false` | 未匹配接口仅记录、不限流；自动发现与 pending 写入不变 |
 | `WithPubSubChannel` | `oe:limit:rules:updated` | 规则变更广播频道 |
 | `WithOnDiscover` | -- | 发现未配置接口时的回调 |
+| `WithDisablePendingSave` | `false` | 关闭自动发现写入待审核表 |
 | `WithSkipAutoMigrate` | `false` | 跳过自动建表 |
 
 #### 腾讯广告 (gdt)
 
 | 选项 | 默认值 | 说明 |
 |------|--------|------|
-| `WithFallbackQPM` | `100` | 未匹配规则时的兜底 QPM |
+| `WithFallbackQPM` | `2000` | 未匹配规则时的兜底 QPM（同时作为 pending 建议值） |
 | `WithFallbackQPD` | `0` | 未匹配规则时的兜底 QPD（0=不限） |
+| `WithUnmatchedUnlimited` | `false` | 未匹配接口仅记录、不限流；自动发现与 pending 写入不变 |
 | `WithPubSubChannel` | `gdt:limit:rules:updated` | 规则变更广播频道 |
+| `WithOnDiscover` | -- | 发现未配置接口时的回调 |
+| `WithDisablePendingSave` | `false` | 关闭自动发现写入待审核表 |
+| `WithSkipAutoMigrate` | `false` | 跳过自动建表 |
 
 ### 管理后台
 

@@ -82,7 +82,7 @@ func (t *Transport) allowLocal(ctx context.Context, normalized string) (bool, er
 		})
 	}
 
-	if len(checks) == 0 {
+	if len(checks) == 0 { // QPM/QPD 均为 0 时视为不限流（含 UnlimitedRule 场景）
 		return true, nil
 	}
 	return t.manager.limiter.AllowMultiWindow(ctx, checks)

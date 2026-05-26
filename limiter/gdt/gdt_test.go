@@ -169,6 +169,133 @@ func TestTransport_NoLimitWhenZero(t *testing.T) {
 	}
 }
 
+func TestUnmatchedUnlimited_SkipsFallbackLimit(t *testing.T) {
+	db := testDB(t)
+	rdb, cleanup := testRedis(t)
+	defer cleanup()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	tp, err := gdt.NewTransport(db, rdb,
+		gdt.WithPubSubChannel("ch:"+t.Name()),
+		gdt.WithSkipAutoMigrate(),
+		gdt.WithFallbackQPM(1),
+		gdt.WithUnmatchedUnlimited(),
+		gdt.WithBaseTransport(upstream.Client().Transport),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tp.Close()
+	client := &http.Client{Transport: tp}
+	url := upstream.URL + "/v3.0/unknown/api"
+
+	for i := 0; i < 5; i++ {
+		resp, err := client.Get(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("request %d: want 200 (unlimited), got %d", i+1, resp.StatusCode)
+		}
+	}
+
+	var n int64
+	db.Model(&model.GdtRateLimitPending{}).Where("status = ?", model.PendingStatusPending).Count(&n)
+	if n != 1 {
+		t.Fatalf("pending=%d want 1", n)
+	}
+}
+
+func TestUnmatchedDefault_UsesFallbackLimit(t *testing.T) {
+	db := testDB(t)
+	rdb, cleanup := testRedis(t)
+	defer cleanup()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	tp, err := gdt.NewTransport(db, rdb,
+		gdt.WithPubSubChannel("ch:"+t.Name()),
+		gdt.WithSkipAutoMigrate(),
+		gdt.WithFallbackQPM(1),
+		gdt.WithBaseTransport(upstream.Client().Transport),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tp.Close()
+	client := &http.Client{Transport: tp}
+	url := upstream.URL + "/v3.0/unknown/fallback"
+
+	resp, err := client.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("first request: want 200, got %d", resp.StatusCode)
+	}
+
+	resp, err = client.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("second request: want 429 (fallback limit), got %d", resp.StatusCode)
+	}
+}
+
+func TestUnmatchedUnlimited_WithDisablePendingSave_NoPending(t *testing.T) {
+	db := testDB(t)
+	rdb, cleanup := testRedis(t)
+	defer cleanup()
+
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	tp, err := gdt.NewTransport(db, rdb,
+		gdt.WithPubSubChannel("ch:"+t.Name()),
+		gdt.WithSkipAutoMigrate(),
+		gdt.WithFallbackQPM(1),
+		gdt.WithUnmatchedUnlimited(),
+		gdt.WithDisablePendingSave(),
+		gdt.WithBaseTransport(upstream.Client().Transport),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tp.Close()
+	client := &http.Client{Transport: tp}
+	url := upstream.URL + "/v3.0/no_pending/api"
+
+	for i := 0; i < 3; i++ {
+		resp, err := client.Get(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("request %d: want 200, got %d", i+1, resp.StatusCode)
+		}
+	}
+
+	var n int64
+	db.Model(&model.GdtRateLimitPending{}).Count(&n)
+	if n != 0 {
+		t.Fatalf("pending=%d want 0 (DisablePendingSave)", n)
+	}
+}
+
 func TestAutoDiscover_WritePending(t *testing.T) {
 	db := testDB(t)
 	rdb, cleanup := testRedis(t)

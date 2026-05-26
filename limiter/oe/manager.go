@@ -39,6 +39,9 @@ func NewRuleManager(db *gorm.DB, rdb *redis.Client, opts ...Option) (*RuleManage
 		fn(&o)
 	}
 	o.applyDefaults()
+	if o.UnmatchedUnlimited && o.DisablePendingSave {
+		log.Printf("[oe-limiter] WARNING: UnmatchedUnlimited + DisablePendingSave 同时启用，未匹配接口将既无限流也无记录")
+	}
 
 	if !o.SkipAutoMigrate {
 		if err := AutoMigrate(db); err != nil {
@@ -82,12 +85,21 @@ func (rm *RuleManager) PublishRuleUpdate(ctx context.Context) error {
 	return rm.rdb.Publish(ctx, rm.opts.PubSubChannel, "reload").Err()
 }
 
-// GetRule 根据 API 路径获取限流规则（最长前缀匹配），未匹配则触发自动发现并返回兜底规则。
+// GetRule 根据 API 路径获取限流规则（最长前缀匹配）。
+// 未匹配时触发自动发现；若 UnmatchedUnlimited 为 true 则返回不限流规则，否则返回兜底规则。
 func (rm *RuleManager) GetRule(apiPath string) Rule {
 	if rule, ok := rm.matchRule(apiPath); ok {
 		return rule
 	}
 	rm.handleAutoDiscover(apiPath)
+	return rm.unmatchedRule()
+}
+
+// unmatchedRule 返回未匹配到任何规则时应使用的 Rule。
+func (rm *RuleManager) unmatchedRule() Rule {
+	if rm.opts.UnmatchedUnlimited {
+		return UnlimitedRule()
+	}
 	return DefaultRule(rm.opts.FallbackQPS)
 }
 

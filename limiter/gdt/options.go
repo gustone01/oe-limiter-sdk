@@ -6,7 +6,7 @@ import (
 
 const (
 	defaultPubSubChannel = "gdt:limit:rules:updated"
-	defaultFallbackQPM   = 1000
+	defaultFallbackQPM   = 2000
 	defaultFallbackQPD   = 0 // 0 表示不限制
 )
 
@@ -14,12 +14,14 @@ const (
 type Options struct {
 	// PubSubChannel 规则变更广播 Redis 频道名，默认 "gdt:limit:rules:updated"。
 	PubSubChannel string
-	// FallbackQPM 未匹配到规则时的兜底 QPM，默认 1000。
+	// FallbackQPM 未匹配到规则时的兜底 QPM，默认 2000。
 	FallbackQPM int
 	// FallbackQPD 未匹配到规则时的兜底 QPD，0 表示不限制。
 	FallbackQPD int
 	// OnDiscover 首次访问未配置接口时触发的回调（异步执行）。
 	OnDiscover func(apiPath string)
+	// UnmatchedUnlimited 为 true 时，未匹配规则的接口仍自动发现并写入待审核表，但不应用兜底限流。
+	UnmatchedUnlimited bool
 	// DisablePendingSave 为 true 时不写入待审核表。
 	DisablePendingSave bool
 	// SkipAutoMigrate 为 true 时跳过自动建表（适用于 DBA 统一管理 DDL 的场景）。
@@ -62,6 +64,14 @@ func WithFallbackQPD(qpd int) Option {
 // WithOnDiscover 注册「发现未配置接口」时的回调。
 func WithOnDiscover(fn func(apiPath string)) Option {
 	return func(o *Options) { o.OnDiscover = fn }
+}
+
+// WithUnmatchedUnlimited 开启「未匹配接口仅记录、不限流」模式。
+// 适用于采集期或内网环境；生产环境请确认可接受审核前无限流风险。
+// 自动发现、待审核表写入与 OnDiscover 回调行为不变，FallbackQPM 仍作为建议值写入 pending。
+// 注意：不要与 WithDisablePendingSave 同时使用，否则新接口将既无限流也无记录。
+func WithUnmatchedUnlimited() Option {
+	return func(o *Options) { o.UnmatchedUnlimited = true }
 }
 
 // WithDisablePendingSave 关闭自动发现写入 MySQL 待审核表。
